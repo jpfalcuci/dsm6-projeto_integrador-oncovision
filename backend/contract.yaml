@@ -1,0 +1,152 @@
+openapi: 3.0.3
+info:
+  title: Breast Cancer Prediction API
+  version: 1.0.0
+  description: API para autenticação de usuários, envio de dados clínicos e obtenção de previsões de câncer de mama, com histórico por usuário.
+
+paths:
+  /register:
+    post:
+      summary: Registro de novo usuário
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+              required:
+                - username
+                - password
+      responses:
+        '200':
+          description: Usuário registrado com sucesso
+        '400':
+          description: Dados inválidos ou usuário já existente
+
+  /login:
+    post:
+      summary: Autenticação de usuário
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+              required:
+                - username
+                - password
+      responses:
+        '200':
+          description: Login bem-sucedido
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  hash:
+                    type: string
+        '401':
+          description: Credenciais inválidas
+
+  /predict:
+    post:
+      summary: Envia dados e retorna uma previsão
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                hash:
+                  type: string
+                data:
+                  $ref: '#/components/schemas/InputData'
+              required:
+                - username
+                - hash
+                - data
+      responses:
+        '200':
+          description: Previsão gerada com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  prediction:
+                    type: string
+                    enum: ["Benigno", "Maligno"]
+        '400':
+          description: Parâmetros ausentes
+        '401':
+          description: Hash inválido
+
+  /history/{username}:
+    get:
+      summary: Retorna o histórico de previsões do usuário
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: hash
+          in: query
+          required: true
+          schema:
+            type: string
+
+      responses:
+        '200':
+          description: Lista de previsões anteriores
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  history:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        input:
+                          $ref: '#/components/schemas/InputData'
+                        prediction:
+                          type: string
+                          enum: ["Benigno", "Maligno"]
+        '400':
+          description: Hash não fornecido
+        '401':
+          description: Hash inválido
+
+components:
+  schemas:
+    InputData:
+      type: object
+      properties:
+        mean_radius: { type: number }
+        mean_texture: { type: number }
+        mean_perimeter: { type: number }
+        mean_area: { type: number }
+        mean_smoothness: { type: number }
+      required:
+        - mean_radius
+        - mean_texture
+        - mean_perimeter
+        - mean_area
+        - mean_smoothness
