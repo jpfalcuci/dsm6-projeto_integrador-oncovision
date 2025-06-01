@@ -1,17 +1,23 @@
-import os
-import json
-from utils.config import DB_PATH
+import psycopg2
+from psycopg2.extras import RealDictCursor
+from utils.config import DB_CONFIG
 
-def load_db():
-    if not os.path.exists(DB_PATH):
-        with open(DB_PATH, 'w') as f:
-            json.dump({}, f)
-    with open(DB_PATH, 'r') as f:
-        try:
-            return json.load(f)
-        except json.JSONDecodeError:
-            return {}
 
-def save_db(data):
-    with open(DB_PATH, 'w') as f:
-        json.dump(data, f, indent=2)
+def get_connection():
+    conn = psycopg2.connect(**DB_CONFIG)
+    return conn
+
+
+def execute_query(query, params=None, fetch=False, fetchone=False):
+    conn = get_connection()
+    try:
+        with conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute(query, params)
+                if fetch:
+                    return cur.fetchall()
+                if fetchone:
+                    return cur.fetchone()
+                conn.commit()
+    finally:
+        conn.close()

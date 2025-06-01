@@ -1,8 +1,13 @@
 from flask import Blueprint, request, jsonify
-from services.auth_service import hash_password, generate_user_hash
-from services.db_service import load_db, save_db
+from services.auth_service import (
+    hash_password,
+    generate_user_hash,
+    create_user,
+    get_user_by_username
+)
 
 auth_bp = Blueprint('auth', __name__)
+
 
 @auth_bp.route('/register', methods=['POST'])
 def register():
@@ -11,20 +16,16 @@ def register():
     password = data.get('password')
 
     if not username or not password:
-        return jsonify({'message': 'Username e senha sao obrigatorios.'}), 400
+        return jsonify({'message': 'Username e senha são obrigatorios'}), 400
 
-    db = load_db()
-    users = db.get('users', {})
+    existing_user = get_user_by_username(username)
+    if existing_user:
+        return jsonify({'message': 'Usuario ja existe.'}), 409
 
-    if username in users:
-        return jsonify({'message': 'Usuario ja existe.'}), 400
-
-    users[username] = hash_password(password)
-    db['users'] = users
-    db.setdefault('history', {})[username] = []
-    save_db(db)
+    create_user(username, password)
 
     return jsonify({'message': 'Usuario registrado com sucesso.'})
+
 
 @auth_bp.route('/login', methods=['POST'])
 def login():
@@ -33,13 +34,14 @@ def login():
     password = data.get('password')
 
     if not username or not password:
-        return jsonify({'message': 'Username e senha sao obrigatorios.'}), 400
+        return jsonify({'message': 'Username e senha sao obrigatorios'}), 400
 
-    db = load_db()
-    users = db.get('users', {})
+    user = get_user_by_username(username)
+    if not user:
+        return jsonify({'message': 'Credenciais invalidas'}), 401
 
-    if username not in users or users[username] != hash_password(password):
-        return jsonify({'message': 'Credenciais invalidas.'}), 401
+    if user['password_hash'] != hash_password(password):
+        return jsonify({'message': 'Credenciais invalidas'}), 401
 
-    user_hash = generate_user_hash(username, users[username])
+    user_hash = generate_user_hash(username, user['password_hash'])
     return jsonify({'message': 'Login bem-sucedido.', 'hash': user_hash})

@@ -1,9 +1,10 @@
 from flask import Blueprint, request, jsonify
 from services.auth_service import verify_hash
-from services.db_service import load_db, save_db
 from services.predict_service import predict
+from services.history_service import save_prediction
 
 predict_bp = Blueprint('predict', __name__)
+
 
 @predict_bp.route('/predict', methods=['POST'])
 def make_prediction():
@@ -22,12 +23,7 @@ def make_prediction():
         result = predict(input_data)
         label = "Benigno" if result == 1 else "Maligno"
 
-        db = load_db()
-        db.setdefault('history', {}).setdefault(username, []).append({
-            'input': input_data,
-            'prediction': label
-        })
-        save_db(db)
+        save_prediction(username, input_data, label)
 
         return jsonify({'prediction': label})
     except Exception as e:

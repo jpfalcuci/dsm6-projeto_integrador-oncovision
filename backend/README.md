@@ -1,15 +1,44 @@
-# Backend local (json)
+# Backend PostgreSQL
 
 ## Informações
 
-Backend provisório para auxiliar no desenvolvimento do frontend.
+Backend para o PI OncoVision, desenvolvido em Python com Flask e. O backend é responsável por gerenciar o cadastro de usuários, autenticação e previsões de câncer de mama utilizando um modelo de machine learning.
 
 ## Instalação
 
-1. Instale o Flask:
+1. Instale o PostgreSQL e crie um banco de dados chamado `onco_vision`:
+2. Crie a tabela `users` e `predictions` no banco de dados:
 
-```bash
-pip install Flask
+```sql
+CREATE TABLE users (
+    id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    username TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS predictions (
+    id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id),
+    mean_radius REAL NOT NULL,
+    mean_texture REAL NOT NULL,
+    mean_perimeter REAL NOT NULL,
+    mean_area REAL NOT NULL,
+    mean_smoothness REAL NOT NULL,
+    prediction TEXT CHECK (prediction IN ('Benigno', 'Maligno')) NOT NULL,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+## Configure o arquivo `utils/config.py` com as informações do seu banco de dados:
+
+```python
+DB_CONFIG = {
+    'dbname': 'oncovision',
+    'user': 'SEU_USUARIO',
+    'password': 'SUA_SENHA',
+    'host': 'localhost',
+    'port': 5432
+}
 ```
 
 ## Inicie o servidor:
